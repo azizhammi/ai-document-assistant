@@ -1,6 +1,5 @@
 
-import fitz
-
+import pymupdf as fitz
 
 def extract_pages(pdf_bytes: bytes) -> list[dict]:
     """Extract text from a PDF, preserving page numbers."""
