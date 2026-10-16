@@ -120,3 +120,15 @@ def test_ask_returns_relevant_sources_without_api_key(monkeypatch):
     assert data["mode"] == "retrieval_only"
     assert len(data["sources"]) == 1
     assert data["sources"][0]["page_number"] == 1
+
+
+def test_clear_document():
+    main.document_chunks = [
+        {"page_number": 1, "text": "Example document text."}
+    ]
+
+    response = client.post("/clear")
+
+    assert response.status_code == 200
+    assert response.json()["message"] == "Document cleared successfully."
+    assert main.document_chunks == []

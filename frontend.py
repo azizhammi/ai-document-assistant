@@ -11,7 +11,6 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ---------- Session state ----------
 
 if "uploaded" not in st.session_state:
     st.session_state.uploaded = False
@@ -26,7 +25,6 @@ if "document_stats" not in st.session_state:
     st.session_state.document_stats = {}
 
 
-# ---------- Styling ----------
 
 st.markdown(
     """
@@ -59,7 +57,6 @@ st.markdown(
 )
 
 
-# ---------- Header ----------
 
 st.markdown(
     """
@@ -88,7 +85,6 @@ with right:
         st.info("Upload a PDF to get started")
 
 
-# ---------- Sidebar ----------
 
 with st.sidebar:
     st.header("📄 Your document")
@@ -163,19 +159,35 @@ with st.sidebar:
             st.session_state.messages = []
             st.rerun()
 
+        
         if st.button("Clear document", use_container_width=True):
-            # The backend stores one document globally. Clear it through
-            # a dedicated endpoint, which we'll add in the next step.
-            st.warning(
-                "The backend does not have a document-clear endpoint yet. "
-                "We'll add one next."
-            )
+            try:
+                response = requests.post(
+                    f"{API_URL}/clear",
+                    timeout=10,
+                )
+
+                if response.ok:
+                    st.session_state.uploaded = False
+                    st.session_state.document_name = ""
+                    st.session_state.document_stats = {}
+                    st.session_state.messages = []
+                    st.success("Document cleared.")
+                    st.rerun()
+                else:
+                    st.error("Could not clear the document.")
+
+            except requests.RequestException:
+                st.error(
+                    "Cannot reach the backend. "
+                    "Make sure FastAPI is running."
+                )
+
 
     st.divider()
     st.caption("Built with Streamlit, FastAPI and semantic search.")
 
 
-# ---------- Suggested questions ----------
 
 if not st.session_state.uploaded:
     st.markdown("### How it works")
@@ -213,7 +225,6 @@ else:
                 st.rerun()
 
 
-# ---------- Chat history ----------
 
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
@@ -234,7 +245,6 @@ for message in st.session_state.messages:
                     st.divider()
 
 
-# ---------- Question handling ----------
 
 pending_question = st.session_state.pop("pending_question", None)
 typed_question = st.chat_input(

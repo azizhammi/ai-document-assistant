@@ -54,6 +54,14 @@ def health_check():
     return {"status": "healthy"}
 
 
+@app.post("/clear")
+def clear_document():
+    global document_chunks
+    document_chunks = []
+
+    return {"message": "Document cleared successfully."}
+
+
 @app.post("/upload")
 async def upload_pdf(file: UploadFile = File(...)):
     global document_chunks
