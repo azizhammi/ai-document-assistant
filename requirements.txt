@@ -3,3 +3,10 @@ uvicorn[standard]
 pymupdf
 pytest
 httpx
+httpx2
+sentence-transformers
+python-multipart
+openai
+python-dotenv
+streamlit
+requests
