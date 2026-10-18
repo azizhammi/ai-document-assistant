@@ -40,14 +40,29 @@ def chunk_pages(
 
     return chunks
 
+def build_chunk_embeddings(
+    chunks: list[dict],
+    model: SentenceTransformer,
+):
+    """Embed document chunks once so their vectors can be reused."""
+    if not chunks:
+        return None
+
+    return model.encode(
+        [chunk["text"] for chunk in chunks],
+        normalize_embeddings=True,
+        convert_to_numpy=True,
+    )
+    
+    
 
 def search_chunks(
     question: str,
     chunks: list[dict],
     model: SentenceTransformer,
     top_k: int = 3,
+    chunk_embeddings=None,
 ) -> list[dict]:
-
     if not question.strip():
         raise ValueError("Question must not be empty")
 
@@ -57,13 +72,15 @@ def search_chunks(
     if not chunks:
         return []
 
-    embeddings = model.encode(
-        [question] + [chunk["text"] for chunk in chunks],
-        normalize_embeddings=True,
-    )
+    # Reuse cached document vectors when provided.
+    if chunk_embeddings is None:
+        chunk_embeddings = build_chunk_embeddings(chunks, model)
 
-    question_embedding = embeddings[0]
-    chunk_embeddings = embeddings[1:]
+    question_embedding = model.encode(
+        [question],
+        normalize_embeddings=True,
+        convert_to_numpy=True,
+    )[0]
 
     scores = chunk_embeddings @ question_embedding
 
@@ -74,9 +91,7 @@ def search_chunks(
     )[:top_k]
 
     return [
-        {
-            **chunks[index],
-            "score": float(scores[index]),
-        }
+        {**chunks[index], "score": float(scores[index])}
         for index in ranked_indices
     ]
+

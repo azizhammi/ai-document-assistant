@@ -1,0 +1,79 @@
+
+{
+  "chunks": [
+    {
+      "id": "python",
+      "text": "Python is a high-level programming language commonly used for automation, data analysis, machine learning, and backend development."
+    },
+    {
+      "id": "fastapi",
+      "text": "FastAPI is a Python web framework for building APIs. It supports request validation using type hints and Pydantic models."
+    },
+    {
+      "id": "pdf",
+      "text": "PyMuPDF is a Python library that can open PDF files and extract text from individual pages."
+    },
+    {
+      "id": "embeddings",
+      "text": "Text embeddings represent text as numerical vectors. Semantically similar pieces of text tend to have vectors that are close together."
+    },
+    {
+      "id": "cosine",
+      "text": "Cosine similarity compares the angle between two vectors. It is often used to rank text embeddings by semantic similarity."
+    },
+    {
+      "id": "chunking",
+      "text": "Chunking splits a long document into smaller passages. Overlapping adjacent chunks can help preserve context across passage boundaries."
+    },
+    {
+      "id": "streamlit",
+      "text": "Streamlit is a Python framework for building interactive data applications and web interfaces with relatively little frontend code."
+    },
+    {
+      "id": "openai",
+      "text": "A language model can generate an answer using retrieved document passages as context. The application should indicate when the available evidence does not support an answer."
+    },
+    {
+      "id": "pytest",
+      "text": "Pytest is a Python testing framework that supports test functions, fixtures, and assertions for automated testing."
+    },
+    {
+      "id": "database",
+      "text": "A relational database stores structured data in tables and supports queries using a language such as SQL."
+    }
+  ],
+  "questions": [
+    {
+      "question": "Which library extracts text from PDF pages in Python?",
+      "relevant_chunk_ids": ["pdf"]
+    },
+    {
+      "question": "How can a system compare the semantic meaning of two text passages?",
+      "relevant_chunk_ids": ["embeddings", "cosine"]
+    },
+    {
+      "question": "Why split long documents into overlapping passages?",
+      "relevant_chunk_ids": ["chunking"]
+    },
+    {
+      "question": "Which framework helps build Python APIs with request validation?",
+      "relevant_chunk_ids": ["fastapi"]
+    },
+    {
+      "question": "How can Python developers create automated tests with fixtures?",
+      "relevant_chunk_ids": ["pytest"]
+    },
+    {
+      "question": "How should a question-answering system handle insufficient evidence?",
+      "relevant_chunk_ids": ["openai"]
+    },
+    {
+      "question": "Which tool helps build interactive Python web interfaces?",
+      "relevant_chunk_ids": ["streamlit"]
+    },
+    {
+      "question": "What does cosine similarity measure when comparing embeddings?",
+      "relevant_chunk_ids": ["cosine"]
+    }
+  ]
+}

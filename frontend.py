@@ -5,51 +5,146 @@ import streamlit as st
 API_URL = "http://127.0.0.1:8000"
 
 st.set_page_config(
-    page_title="DocuMind | AI Document Assistant",
-    page_icon="📚",
+    page_title="DocuMind",
+    page_icon="D",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
+# ---------- Session state ----------
 
-if "uploaded" not in st.session_state:
-    st.session_state.uploaded = False
+defaults = {
+    "uploaded": False,
+    "document_name": "",
+    "messages": [],
+    "document_stats": {},
+}
 
-if "document_name" not in st.session_state:
-    st.session_state.document_name = ""
-
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-if "document_stats" not in st.session_state:
-    st.session_state.document_stats = {}
+for key, value in defaults.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
 
 
+# ---------- Styling ----------
 
 st.markdown(
     """
     <style>
     .block-container {
-        max-width: 1100px;
-        padding-top: 2rem;
+        max-width: 1050px;
+        padding-top: 2.4rem;
         padding-bottom: 3rem;
     }
-    .hero {
-        padding: 1.5rem 1.7rem;
-        border: 1px solid rgba(128, 128, 128, 0.25);
-        border-radius: 16px;
-        margin-bottom: 1.5rem;
+
+    #MainMenu, footer {
+        visibility: hidden;
     }
-    .hero h1 {
-        margin-bottom: 0.4rem;
-        font-size: 2.1rem;
+
+    header[data-testid="stHeader"] {
+        background: transparent;
     }
-    .hero p {
-        margin-bottom: 0;
-        opacity: 0.8;
+
+    .brand {
+        font-size: 0.8rem;
+        font-weight: 650;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--text-color);
+        opacity: 0.65;
+        margin-bottom: 1.3rem;
     }
+
+    .page-title {
+        font-size: 2.35rem;
+        font-weight: 620;
+        letter-spacing: -0.055em;
+        line-height: 1.15;
+        margin: 0 0 0.6rem 0;
+        color: var(--text-color);
+    }
+
+    .page-description {
+        font-size: 1rem;
+        line-height: 1.65;
+        max-width: 650px;
+        opacity: 0.72;
+        margin-bottom: 1.7rem;
+    }
+
+    .section-label {
+        font-size: 0.76rem;
+        font-weight: 650;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        opacity: 0.62;
+        margin-bottom: 0.5rem;
+    }
+
+    .document-card {
+        padding: 0.9rem 1rem;
+        border: 1px solid rgba(128, 128, 128, 0.28);
+        border-radius: 8px;
+        margin: 0.7rem 0 1rem 0;
+    }
+
+    .document-name {
+        font-weight: 600;
+        overflow-wrap: anywhere;
+        margin-bottom: 0.25rem;
+    }
+
+    .document-detail {
+        font-size: 0.83rem;
+        opacity: 0.65;
+    }
+
     [data-testid="stChatMessage"] {
-        border-radius: 12px;
+        border: none;
+        padding-top: 0.7rem;
+        padding-bottom: 0.7rem;
+    }
+
+    [data-testid="stChatMessage"] p {
+        line-height: 1.75;
+    }
+
+    [data-testid="stSidebar"] {
+        border-right: 1px solid rgba(128, 128, 128, 0.18);
+    }
+
+    [data-testid="stSidebar"] .block-container {
+        padding-top: 2rem;
+    }
+
+    div[data-testid="stExpander"] {
+        border: 1px solid rgba(128, 128, 128, 0.25);
+        border-radius: 8px;
+    }
+
+    div.stButton > button {
+        border-radius: 7px;
+        font-weight: 500;
+        min-height: 2.5rem;
+    }
+
+    div[data-testid="stMetric"] {
+        padding: 0.7rem 0;
+    }
+
+    .empty-state {
+        padding: 2rem 0 1rem 0;
+        max-width: 620px;
+    }
+
+    .empty-state h3 {
+        font-size: 1.25rem;
+        font-weight: 580;
+        letter-spacing: -0.025em;
+    }
+
+    .muted {
+        opacity: 0.68;
+        line-height: 1.7;
     }
     </style>
     """,
@@ -57,51 +152,52 @@ st.markdown(
 )
 
 
+# ---------- Header ----------
+
+st.markdown('<div class="brand">DOCUMIND / DOCUMENT READER</div>',
+            unsafe_allow_html=True)
+
+st.markdown(
+    '<div class="page-title">Your documents, in context.</div>',
+    unsafe_allow_html=True,
+)
 
 st.markdown(
     """
-    <div class="hero">
-        <h1>📚 DocuMind</h1>
-        <p>Your documents, understood. Upload a PDF and ask questions
-        with answers grounded in its content.</p>
+    <div class="page-description">
+        Ask questions about a PDF, get answers based on its contents,
+        and check the original passages whenever you need to.
     </div>
     """,
     unsafe_allow_html=True,
 )
 
-left, right = st.columns([2, 1])
-
-with left:
-    st.subheader("Ask your document")
-    st.caption(
-        "Get answers from your PDF and inspect the passages "
-        "used to support them."
-    )
-
-with right:
-    if st.session_state.uploaded:
-        st.success(f"Ready: {st.session_state.document_name}")
-    else:
-        st.info("Upload a PDF to get started")
+if st.session_state.uploaded:
+    st.caption(f"Working with: {st.session_state.document_name}")
+else:
+    st.caption("No document loaded")
 
 
+# ---------- Sidebar ----------
 
 with st.sidebar:
-    st.header("📄 Your document")
+    st.markdown("### Workspace")
+    st.caption("DOCUMENT")
 
     pdf = st.file_uploader(
-        "Choose a PDF",
+        "Choose a PDF file",
         type=["pdf"],
-        help="Use a text-based PDF smaller than 10 MB.",
+        help="Text-based PDF, maximum 10 MB.",
+        label_visibility="collapsed",
     )
 
     if st.button(
-        "Process document",
+        "Process PDF",
         type="primary",
         disabled=pdf is None,
         use_container_width=True,
     ):
-        with st.spinner("Reading and indexing your PDF..."):
+        with st.spinner("Extracting and indexing text..."):
             try:
                 response = requests.post(
                     f"{API_URL}/upload",
@@ -126,24 +222,40 @@ with st.sidebar:
                         "chunks": result["chunks_created"],
                     }
 
-                    st.success("Document processed successfully!")
                     st.rerun()
                 else:
-                    detail = response.json().get(
-                        "detail", "Could not process the PDF."
-                    )
+                    try:
+                        detail = response.json().get(
+                            "detail", "Could not process this PDF."
+                        )
+                    except ValueError:
+                        detail = "Could not process this PDF."
+
                     st.error(detail)
 
             except requests.RequestException:
                 st.error(
-                    "Cannot reach the backend. Start FastAPI in "
-                    "another terminal and try again."
+                    "Cannot connect to the backend. "
+                    "Make sure FastAPI is running."
                 )
 
     if st.session_state.uploaded:
         st.divider()
-        st.markdown("**Current document**")
-        st.write(st.session_state.document_name)
+        st.caption("CURRENT DOCUMENT")
+
+        st.markdown(
+            f"""
+            <div class="document-card">
+                <div class="document-name">
+                    {st.session_state.document_name}
+                </div>
+                <div class="document-detail">
+                    Indexed and ready to query
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
         stat1, stat2 = st.columns(2)
         stat1.metric(
@@ -151,16 +263,15 @@ with st.sidebar:
             st.session_state.document_stats.get("pages", 0),
         )
         stat2.metric(
-            "Text chunks",
+            "Passages",
             st.session_state.document_stats.get("chunks", 0),
         )
 
-        if st.button("Reset chat", use_container_width=True):
+        if st.button("New conversation", use_container_width=True):
             st.session_state.messages = []
             st.rerun()
 
-        
-        if st.button("Clear document", use_container_width=True):
+        if st.button("Remove document", use_container_width=True):
             try:
                 response = requests.post(
                     f"{API_URL}/clear",
@@ -172,49 +283,63 @@ with st.sidebar:
                     st.session_state.document_name = ""
                     st.session_state.document_stats = {}
                     st.session_state.messages = []
-                    st.success("Document cleared.")
                     st.rerun()
                 else:
-                    st.error("Could not clear the document.")
+                    st.error("Could not remove the document.")
 
             except requests.RequestException:
                 st.error(
-                    "Cannot reach the backend. "
+                    "Cannot connect to the backend. "
                     "Make sure FastAPI is running."
                 )
 
-
     st.divider()
-    st.caption("Built with Streamlit, FastAPI and semantic search.")
+    st.caption("PDF extraction · Semantic search · Gemini")
 
 
+# ---------- Main content ----------
 
 if not st.session_state.uploaded:
-    st.markdown("### How it works")
+    st.markdown('<div class="empty-state">', unsafe_allow_html=True)
+    st.markdown("### Start with a document")
+    st.markdown(
+        """
+        <p class="muted">
+            Upload a PDF using the panel on the left. Once it has been
+            processed, you can ask questions in plain language and
+            inspect the passages used to form each answer.
+        </p>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.divider()
+
+    st.markdown("**The workflow**")
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.markdown("#### 1. Upload")
-        st.write("Choose a text-based PDF from your computer.")
+        st.markdown("**01 — Add**")
+        st.caption("Upload a PDF and extract its text.")
 
     with col2:
-        st.markdown("#### 2. Ask")
-        st.write("Ask a specific question about the document.")
+        st.markdown("**02 — Explore**")
+        st.caption("Ask questions about the material.")
 
     with col3:
-        st.markdown("#### 3. Verify")
-        st.write("Inspect the source passages and page numbers.")
-
-    st.info("Upload a PDF in the sidebar to begin.")
+        st.markdown("**03 — Verify**")
+        st.caption("Review source passages and page numbers.")
 
 else:
+    st.markdown('<div class="section-label">SUGGESTED QUESTIONS</div>',
+                unsafe_allow_html=True)
+
     suggestions = [
         "Summarize the main points",
         "What are the key conclusions?",
-        "What important terms are defined?",
+        "Which important terms are defined?",
     ]
-
-    st.markdown("**Try asking**")
 
     suggestion_cols = st.columns(3)
 
@@ -224,90 +349,105 @@ else:
                 st.session_state.pending_question = suggestion
                 st.rerun()
 
+    st.divider()
 
+    # Render previous messages.
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
 
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+            sources = message.get("sources", [])
 
-        sources = message.get("sources", [])
+            if sources:
+                with st.expander(
+                    f"Sources · {len(sources)} passages"
+                ):
+                    for source in sources:
+                        st.markdown(
+                            f"**Page {source['page_number']}** "
+                            f"<span style='opacity:0.65'>"
+                            f"· Similarity {source['score']:.3f}</span>",
+                            unsafe_allow_html=True,
+                        )
+                        st.write(source["text"])
+                        st.divider()
 
-        if sources:
-            with st.expander(
-                f"📎 View {len(sources)} retrieved source passages"
-            ):
-                for source in sources:
-                    st.markdown(
-                        f"**Page {source['page_number']}** · "
-                        f"Similarity: {source['score']:.3f}"
-                    )
-                    st.write(source["text"])
-                    st.divider()
-
-
-
-pending_question = st.session_state.pop("pending_question", None)
-typed_question = st.chat_input(
-    "Ask a question about your document...",
-    disabled=not st.session_state.uploaded,
-)
-question = typed_question or pending_question
-
-if question and st.session_state.uploaded:
-    st.session_state.messages.append(
-        {"role": "user", "content": question}
+    pending_question = st.session_state.pop(
+        "pending_question", None
     )
 
-    with st.chat_message("user"):
-        st.markdown(question)
+    typed_question = st.chat_input(
+        "Ask about this document...",
+        disabled=not st.session_state.uploaded,
+    )
 
-    with st.chat_message("assistant"):
-        with st.spinner("Searching the document and preparing an answer..."):
-            try:
-                response = requests.post(
-                    f"{API_URL}/ask",
-                    json={"question": question},
-                    timeout=120,
-                )
+    question = typed_question or pending_question
 
-                if response.ok:
-                    result = response.json()
-                    answer = result["answer"]
-                    sources = result.get("sources", [])
+    if question and st.session_state.uploaded:
+        st.session_state.messages.append(
+            {"role": "user", "content": question}
+        )
 
-                    st.markdown(answer)
+        with st.chat_message("user"):
+            st.markdown(question)
 
-                    if result.get("mode") == "retrieval_only":
-                        st.caption(
-                            "Retrieval-only mode: configure an API key "
-                            "to enable generated answers."
-                        )
+        with st.chat_message("assistant"):
+            with st.spinner("Reading relevant passages..."):
+                try:
+                    response = requests.post(
+                        f"{API_URL}/ask",
+                        json={"question": question},
+                        timeout=120,
+                    )
 
-                    with st.expander(
-                        f"📎 View {len(sources)} retrieved source passages"
-                    ):
-                        for source in sources:
-                            st.markdown(
-                                f"**Page {source['page_number']}** · "
-                                f"Similarity: {source['score']:.3f}"
+                    if response.ok:
+                        result = response.json()
+                        answer = result["answer"]
+                        sources = result.get("sources", [])
+
+                        st.markdown(answer)
+
+                        if result.get("mode") == "retrieval_only":
+                            st.caption(
+                                "AI generation is unavailable. "
+                                "Showing retrieved document passages."
                             )
-                            st.write(source["text"])
-                            st.divider()
 
-                    st.session_state.messages.append(
-                        {
-                            "role": "assistant",
-                            "content": answer,
-                            "sources": sources,
-                        }
-                    )
-                else:
-                    detail = response.json().get(
-                        "detail", "The question could not be answered."
-                    )
-                    st.error(detail)
+                        if sources:
+                            with st.expander(
+                                f"Sources · {len(sources)} passages"
+                            ):
+                                for source in sources:
+                                    st.markdown(
+                                        f"**Page {source['page_number']}** "
+                                        f"<span style='opacity:0.65'>"
+                                        f"· Similarity "
+                                        f"{source['score']:.3f}</span>",
+                                        unsafe_allow_html=True,
+                                    )
+                                    st.write(source["text"])
+                                    st.divider()
 
-            except requests.RequestException:
-                st.error(
-                    "Cannot reach the backend. Check that FastAPI is running."
-                )
+                        st.session_state.messages.append(
+                            {
+                                "role": "assistant",
+                                "content": answer,
+                                "sources": sources,
+                            }
+                        )
+                    else:
+                        try:
+                            detail = response.json().get(
+                                "detail",
+                                "The question could not be answered.",
+                            )
+                        except ValueError:
+                            detail = "The question could not be answered."
+
+                        st.error(detail)
+
+                except requests.RequestException:
+                    st.error(
+                        "Cannot connect to the backend. "
+                        "Make sure FastAPI is running."
+                    )

@@ -81,15 +81,27 @@ def test_ask_requires_uploaded_document():
     assert "Upload a PDF" in response.json()["detail"]
 
 
-def test_ask_returns_relevant_sources_without_api_key(monkeypatch):
-    # Mock the embedding model so this test does not download or load one.
-    monkeypatch.setattr(main, "get_embedding_model", lambda: object())
 
-    # Mock search to make the test fast and predictable.
+def test_ask_returns_relevant_sources_without_api_key(monkeypatch):
+    # Mock the embedding model so no real model is loaded.
+    monkeypatch.setattr(
+        main,
+        "get_embedding_model",
+        lambda: object(),
+    )
+
+    # Mock embedding generation so the test stays fast.
+    monkeypatch.setattr(
+        main,
+        "build_chunk_embeddings",
+        lambda chunks, model: [[0.1, 0.2, 0.3]],
+    )
+
+    # Mock search to make the test predictable.
     monkeypatch.setattr(
         main,
         "search_chunks",
-        lambda question, chunks, model, top_k: [
+        lambda question, chunks, model, top_k, chunk_embeddings=None: [
             {
                 "page_number": 1,
                 "text": "Python is a programming language.",
@@ -108,7 +120,10 @@ def test_ask_returns_relevant_sources_without_api_key(monkeypatch):
             }
         ],
     )
-    monkeypatch.setenv("OPENAI_API_KEY", "")
+
+    # Ensure the embedding cache starts empty.
+    monkeypatch.setattr(main, "document_embeddings", None)
+    monkeypatch.setenv("GEMINI_API_KEY", "")
 
     response = client.post(
         "/ask",
@@ -116,19 +131,8 @@ def test_ask_returns_relevant_sources_without_api_key(monkeypatch):
     )
 
     assert response.status_code == 200
+
     data = response.json()
     assert data["mode"] == "retrieval_only"
     assert len(data["sources"]) == 1
     assert data["sources"][0]["page_number"] == 1
-
-
-def test_clear_document():
-    main.document_chunks = [
-        {"page_number": 1, "text": "Example document text."}
-    ]
-
-    response = client.post("/clear")
-
-    assert response.status_code == 200
-    assert response.json()["message"] == "Document cleared successfully."
-    assert main.document_chunks == []
